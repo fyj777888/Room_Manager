@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Room Manager</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f0f2f5;color:#333;min-height:100vh;}
+
+/* Header */
+.header{background:linear-gradient(135deg,#1a2a3a,#2980b9);color:#fff;padding:18px 30px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.2);}
+.header h1{font-size:26px;letter-spacing:1px;}
+
+/* Button Bar */
+.btn-bar{display:flex;flex-wrap:wrap;gap:10px;padding:16px 30px;background:#fff;border-bottom:2px solid #e0e0e0;justify-content:center;}
+.btn-bar button{padding:11px 20px;font-size:14px;border:none;border-radius:6px;cursor:pointer;font-weight:600;transition:all .2s;letter-spacing:.3px;}
+.btn-bar button:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.15);}
+.btn-add{background:#27ae60;color:#fff;} .btn-del{background:#e74c3c;color:#fff;}
+.btn-show{background:#2980b9;color:#fff;} .btn-pay{background:#f39c12;color:#fff;}
+.btn-export{background:#8e44ad;color:#fff;} .btn-import{background:#16a085;color:#fff;}
+
+/* Content */
+.content{padding:20px 30px;min-height:60vh;}
+.panel{background:#fff;border-radius:10px;padding:25px;box-shadow:0 2px 10px rgba(0,0,0,.08);margin-bottom:20px;}
+.panel h2{margin-bottom:18px;color:#2c3e50;border-bottom:2px solid #3498db;padding-bottom:8px;font-size:20px;}
+
+/* Forms */
+label{display:block;margin-bottom:5px;font-weight:600;color:#555;font-size:14px;}
+input,select{width:100%;padding:10px;border:1px solid #ccc;border-radius:5px;font-size:14px;margin-bottom:14px;transition:border .2s;}
+input:focus,select:focus{border-color:#3498db;outline:none;box-shadow:0 0 0 2px rgba(52,152,219,.15);}
+input:disabled,select:disabled{background:#eee;cursor:not-allowed;color:#999;}
+.form-row{display:flex;gap:15px;flex-wrap:wrap;}
+.form-row>div{flex:1;min-width:200px;}
+
+/* Buttons */
+.action-btn{padding:10px 25px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;color:#fff;transition:all .2s;}
+.action-btn.green{background:#27ae60;} .action-btn.red{background:#e74c3c;} .action-btn.blue{background:#2980b9;}
+.action-btn:hover{opacity:.85;transform:translateY(-1px);}
+
+.sub-btn-bar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+.sub-btn-bar button{padding:10px 20px;border:none;border-radius:5px;cursor:pointer;font-weight:600;font-size:14px;color:#fff;background:#34495e;transition:all .2s;}
+.sub-btn-bar button.active{background:#3498db;}
+.sub-btn-bar button:hover{background:#2980b9;}
+
+/* Room Data View */
+.room-view-container{overflow-x:auto;margin-top:10px;}
+.room-grid{min-width:900px;}
+.room-grid-header{display:flex;align-items:center;background:#2c3e50;color:#fff;border-radius:8px 8px 0 0;}
+.room-grid-header .arrow{cursor:pointer;padding:10px 14px;font-size:18px;user-select:none;transition:background .2s;flex-shrink:0;}
+.room-grid-header .arrow:hover{background:rgba(255,255,255,.15);}
+.room-grid-header .months{display:flex;flex:1;}
+.room-grid-header .month-cell{flex:1;text-align:center;padding:10px 2px;font-weight:600;font-size:11px;border-right:1px solid rgba(255,255,255,.1);}
+.room-grid-header .month-cell.current-month{background:rgba(52,152,219,.4);}
+.room-grid-header .room-label-header{width:70px;text-align:center;padding:10px 0;font-weight:700;border-right:1px solid rgba(255,255,255,.2);font-size:13px;flex-shrink:0;}
+
+.room-row{display:flex;border-bottom:1px solid #e0e0e0;}
+.room-row:last-child{border-radius:0 0 8px 8px;overflow:hidden;}
+.room-row .room-label{width:70px;display:flex;align-items:center;justify-content:center;font-weight:700;background:#ecf0f1;border-right:1px solid #ddd;font-size:13px;min-height:42px;flex-shrink:0;}
+.room-row .months-cells{display:flex;flex:1;position:relative;min-height:42px;}
+.room-row .month-block{flex:1;height:42px;border-right:1px solid #f0f0f0;position:relative;background:#fafafa;}
+.room-row .month-block:nth-child(even){background:#f5f5f5;}
+
+.rental-bar{position:absolute;top:5px;height:32px;border-radius:4px;z-index:2;display:flex;align-items:center;overflow:visible;cursor:pointer;transition:opacity .2s;min-width:2px;}
+.rental-bar:hover{opacity:.85;z-index:10;}
+.rental-bar .rental-name{color:#fff;font-size:10px;font-weight:700;padding:0 4px;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.5);overflow:visible;}
+
+/* Student Table */
+.student-table{width:100%;border-collapse:collapse;margin-top:10px;}
+.student-table th{background:#2c3e50;color:#fff;padding:12px;text-align:left;font-size:14px;}
+.student-table td{padding:10px 12px;border-bottom:1px solid #eee;font-size:14px;}
+.student-table tr:hover{background:#f8f9fa;}
+.balance-positive{color:#27ae60;font-weight:700;}
+.balance-zero{color:#555;font-weight:700;}
+.balance-negative{color:#e74c3c;font-weight:700;}
+
+/* Toast */
+.toast{position:fixed;top:20px;right:20px;padding:14px 24px;border-radius:8px;color:#fff;font-weight:600;z-index:9999;transition:opacity .4s;box-shadow:0 4px 12px rgba(0,0,0,.2);font-size:14px;max-width:400px;}
+.toast.success{background:#27ae60;} .toast.error{background:#e74c3c;} .toast.info{background:#2980b9;}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center;}
+.modal-overlay.show{display:flex;}
+.modal{background:#fff;border-radius:10px;padding:25px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,.3);}
+.modal h3{margin-bottom:15px;color:#2c3e50;font-size:18px;}
+
+.history-list{max-height:350px;overflow-y:auto;font-size:13px;}
+.history-item{padding:8px 0;border-bottom:1px solid #f0f0f0;line-height:1.5;}
+.history-item:last-child{border-bottom:none;}
+
+.back-btn{margin-bottom:15px;padding:8px 18px;background:#95a5a6;color:#fff;border:none;border-radius:5px;cursor:pointer;font-weight:600;font-size:13px;transition:all .2s;}
+.back-btn:hover{background:#7f8c8d;}
+
+.info-msg{margin-bottom:14px;font-size:13px;padding:8px 12px;border-radius:4px;display:none;}
+.info-msg.green{color:#27ae60;background:#e8f8f0;display:block;}
+.info-msg.orange{color:#e67e22;background:#fef5e7;display:block;}
+.info-msg.red{color:#e74c3c;background:#fdecea;display:block;}
+.info-msg.hidden{display:none;}
+
+.footer{text-align:center;padding:15px;color:#aaa;font-size:12px;border-top:1px solid #e0e0e0;margin-top:20px;}
+</style>
+</head>
+<body>
+
+<div class="header"><h1>Room Manager</h1></div>
+
+<div class="btn-bar" id="mainBtnBar">
+  <button class="btn-add" onclick="showAddRental()">Add A Rental Period</button>
+  <button class="btn-del" onclick="showDeleteRental()">Delete A Rental Period</button>
+  <button class="btn-show" onclick="showDataMenu()">Show The Data</button>
+  <button class="btn-pay" onclick="showAddPayment()">Add A Payment</button>
+  <button class="btn-export" onclick="exportJson()">Export Json</button>
+  <button class="btn-import" onclick="triggerImport()">Import Json</button>
+  <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJson(event)">
+</div>
+
+<div class="content" id="content"></div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)hideModal();">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<div class="footer">Room Manager &mdash; Data stored locally in your browser via localStorage</div>
+
+<script>
+// ========== CONSTANTS ==========
+const ROOMS = ['A1','A2','A3','A4','A5','A6','A7','B1','B2','B3','B4'];
+const COLORS = [
+  '#e74c3c','#3498db','#27ae60','#f39c12','#9b59b6','#1abc9c','#e67e22',
+  '#2c3e50','#c0392b','#16a085','#8e44ad','#d35400','#2ecc71','#e91e63',
+  '#00bcd4','#ff5722','#795548','#607d8b','#4caf50','#ff9800'
+];
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// ========== DATA ==========
+let appData = { students: {}, rentals: [], nextRentalId: 1 };
+
+// ========== DATE HELPERS ==========
+function getToday() {
+  const d = new Date(); d.setHours(0,0,0,0); return d;
+}
+function parseDate(str) {
+  const p = str.split('-');
+  const d = new Date(+p[0], +p[1]-1, +p[2]);
+  d.setHours(0,0,0,0); return d;
+}
+function fmtDate(d) {
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function isWholeMonth(sStr, eStr) {
+  const s = parseDate(sStr), e = parseDate(eStr);
+  const ep1 = new Date(e); ep1.setDate(ep1.getDate()+1);
+  return ep1.getDate() === s.getDate();
+}
+function countMonths(sStr, eStr) {
+  const s = parseDate(sStr), e = parseDate(eStr);
+  const ep1 = new Date(e); ep1.setDate(ep1.getDate()+1);
+  return (ep1.getFullYear()-s.getFullYear())*12 + (ep1.getMonth()-s.getMonth());
+}
+
+// ========== CONFLICT CHECK ==========
+function hasRoomConflict(room, sStr, eStr, exId) {
+  const s = parseDate(sStr), e = parseDate(eStr);
+  return appData.rentals.some(r => {
+    if (r.room !== room || (exId && r.id === exId)) return false;
+    return s <= parseDate(r.endDate) && e >= parseDate(r.startDate);
+  });
+}
+function hasStudentConflict(name, sStr, eStr, exId) {
+  const s = parseDate(sStr), e = parseDate(eStr);
+  return appData.rentals.some(r => {
+    if (r.studentName !== name || (exId && r.id === exId)) return false;
+    return s <= parseDate(r.endDate) && e >= parseDate(r.startDate);
+  });
+}
+
+// ========== STUDENT ==========
+function ensureStudent(name) {
+  if (!appData.students[name]) appData.students[name] = { balance: 0, history: [] };
+}
+
+// ========== STORAGE ==========
+function loadData() {
+  try {
+    const raw = localStorage.getItem('roomManagerData');
+    if (raw) {
+      const d = JSON.parse(raw);
+      if (d && d.students && Array.isArray(d.rentals)) {
+        appData = d;
+      }
+    }
+  } catch(e) {}
+  if (!appData.students) appData.students = {};
+  if (!appData.rentals) appData.rentals = [];
+  if (!appData.nextRentalId) appData.nextRentalId = 1;
+}
+function saveData() {
+  localStorage.setItem('roomManagerData', JSON.stringify(appData));
+}
+
+// ========== MONTHLY DEDUCTION ==========
+// Schedule: the initial deduction happens on creation day and covers the first month.
+// Subsequent deductions happen on startDate + 1m, startDate + 2m, etc.
+// On creation, we set lastDeductionAnchor = startDate (the first anchor).
+// Then processMonthlyDeductions will catch up from startDate+1m onwards.
+
+function findNextAnchor(startDate, afterDate, anchorDay) {
+  // Returns the first date in the schedule (startDate, startDate+1m, startDate+2m, ...)
+  // that is strictly after afterDate
+  let y = startDate.getFullYear(), m = startDate.getMonth();
+  while (true) {
+    const maxDay = new Date(y, m+1, 0).getDate();
+    const day = Math.min(anchorDay, maxDay);
+    const d = new Date(y, m, day); d.setHours(0,0,0,0);
+    if (d > afterDate) return d;
+    m++; if (m > 11) { m = 0; y++; }
+  }
+}
+
+function processAllMonthlyDeductions() {
+  const today = getToday();
+  appData.rentals.forEach(r => {
+    if (!r.isWholeMonth || !r.lastDeductionAnchor) return;
+    const startDate = parseDate(r.startDate);
+    const endDate = parseDate(r.endDate);
+    const anchorDay = startDate.getDate();
+    let lastAnchor = parseDate(r.lastDeductionAnchor);
+    
+    let next = findNextAnchor(startDate, lastAnchor, anchorDay);
+    while (next <= today && next <= endDate) {
+      ensureStudent(r.studentName);
+      appData.students[r.studentName].balance -= r.monthlyExpectedMoney;
+      appData.students[r.studentName].history.push({
+        type: 'monthly_deduction',
+        amount: -r.monthlyExpectedMoney,
+        date: fmtDate(next),
+        rentalId: r.id,
+        room: r.room,
+        description: 'Monthly rent for Room ' + r.room + ' (due ' + fmtDate(next) + ')'
+      });
+      r.lastDeductionAnchor = fmtDate(next);
+      lastAnchor = new Date(next);
+      next = findNextAnchor(startDate, lastAnchor, anchorDay);
+    }
+  });
+}
+
+// ========== TOAST ==========
+function showToast(msg, type) {
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type||'info');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 2800);
+}
+
+// ========== MODAL ==========
+function showModal(html) {
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function hideModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+
+// ========== ESCAPE ==========
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function escQ(s) { return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+// ========== MAIN VIEW ==========
+function showMainView() {
+  const today = getToday();
+  const rc = appData.rentals.length;
+  const sc = Object.keys(appData.students).length;
+  const oc = new Set(appData.rentals.filter(r => parseDate(r.startDate)<=today && parseDate(r.endDate)>=today).map(r=>r.room)).size;
+  
+  document.getElementById('content').innerHTML =
+    '<div class="panel" style="text-align:center;padding:50px 30px;">' +
+    '<h2 style="border:none;color:#2c3e50;font-size:24px;">Welcome to Room Manager</h2>' +
+    '<p style="color:#888;margin-top:12px;font-size:15px;">Select an action from the buttons above to get started.</p>' +
+    '<div style="display:flex;gap:30px;justify-content:center;margin-top:30px;flex-wrap:wrap;">' +
+    '<div style="background:#e8f8f0;padding:20px 30px;border-radius:8px;min-width:140px;"><div style="font-size:28px;font-weight:700;color:#27ae60;">'+rc+'</div><div style="font-size:13px;color:#666;margin-top:4px;">Total Rentals</div></div>' +
+    '<div style="background:#eaf2f8;padding:20px 30px;border-radius:8px;min-width:140px;"><div style="font-size:28px;font-weight:700;color:#2980b9;">'+sc+'</div><div style="font-size:13px;color:#666;margin-top:4px;">Students</div></div>' +
+    '<div style="background:#fef5e7;padding:20px 30px;border-radius:8px;min-width:140px;"><div style="font-size:28px;font-weight:700;color:#f39c12;">'+oc+'/'+ROOMS.length+'</div><div style="font-size:13px;color:#666;margin-top:4px;">Rooms Occupied</div></div>' +
+    '</div></div>';
+}
+
+// ========== ADD RENTAL ==========
+function showAddRental() {
+  const opts = ROOMS.map(r=>'<option value="'+r+'">'+r+'</option>').join('');
+  document.getElementById('content').innerHTML =
+    '<div class="panel"><h2>Add A Rental Period</h2>' +
+    '<div class="form-row"><div><label>Name</label><input type="text" id="arName" placeholder="Student name"></div>' +
+    '<div><label>Room</label><select id="arRoom"><option value="">-- Select Room --</option>'+opts+'</select></div></div>' +
+    '<div class="form-row"><div><label>Start Day</label><input type="date" id="arStart" onchange="checkMonthType()"></div>' +
+    '<div><label>End Day</label><input type="date" id="arEnd" onchange="checkMonthType()"></div></div>' +
+    '<div id="monthInfo" class="info-msg hidden"></div>' +
+    '<div class="form-row"><div><label>Monthly Expected Money</label><input type="number" id="arMonthly" step="0.01" min="0" placeholder="0.00"></div>' +
+    '<div><label>Special Expected Money</label><input type="number" id="arSpecial" step="0.01" min="0" placeholder="0.00"></div></div>' +
+    '<div style="margin-top:5px;"><button class="action-btn green" onclick="submitAddRental()">Add A Rental Period</button>' +
+    '<button class="action-btn blue" onclick="showMainView()" style="margin-left:10px;">Cancel</button></div></div>';
+}
+
+function checkMonthType() {
+  const s = document.getElementById('arStart').value;
+  const e = document.getElementById('arEnd').value;
+  const mI = document.getElementById('arMonthly');
+  const sI = document.getElementById('arSpecial');
+  const info = document.getElementById('monthInfo');
+  
+  if (!s || !e) { mI.disabled=false; sI.disabled=false; info.className='info-msg hidden'; return; }
+  if (parseDate(e) <= parseDate(s)) {
+    info.className='info-msg red'; info.textContent='End Day must be after Start Day.'; mI.disabled=false; sI.disabled=false; return;
+  }
+  if (isWholeMonth(s,e)) {
+    const m = countMonths(s,e);
+    info.className='info-msg green'; info.textContent='Whole month rental: '+m+' month(s). Monthly Expected Money enabled.';
+    mI.disabled=false; sI.disabled=true; sI.value='';
+  } else {
+    info.className='info-msg orange'; info.textContent='Non-whole-month rental. Special Expected Money enabled.';
+    mI.disabled=true; mI.value=''; sI.disabled=false;
+  }
+}
+
+function submitAddRental() {
+  const name = document.getElementById('arName').value.trim();
+  const room = document.getElementById('arRoom').value;
+  const startDate = document.getElementById('arStart').value;
+  const endDate = document.getElementById('arEnd').value;
+  const monthly = parseFloat(document.getElementById('arMonthly').value) || 0;
+  const special = parseFloat(document.getElementById('arSpecial').value) || 0;
+  
+  if (!name) { showToast('Please enter student name','error'); return; }
+  if (!room) { showToast('Please select a room','error'); return; }
+  if (!startDate||!endDate) { showToast('Please select start and end dates','error'); return; }
+  if (parseDate(endDate)<=parseDate(startDate)) { showToast('End date must be after start date','error'); return; }
+  
+  const wm = isWholeMonth(startDate, endDate);
+  if (wm && monthly<=0) { showToast('Please enter Monthly Expected Money','error'); return; }
+  if (!wm && special<=0) { showToast('Please enter Special Expected Money','error'); return; }
+  
+  if (hasRoomConflict(room,startDate,endDate)) { showToast('Room '+room+' has a time conflict','error'); return; }
+  if (hasStudentConflict(name,startDate,endDate)) { showToast(name+' already has a room during this period','error'); return; }
+  
+  const today = getToday();
+  const todayStr = fmtDate(today);
+  ensureStudent(name);
+  
+  const rental = {
+    id: appData.nextRentalId++,
+    studentName: name, room: room,
+    startDate: startDate, endDate: endDate,
+    isWholeMonth: wm,
+    monthlyExpectedMoney: wm ? monthly : 0,
+    specialExpectedMoney: wm ? 0 : special,
+    createdDate: todayStr,
+    lastDeductionAnchor: null
+  };
+  
+  if (wm) {
+    // Initial deduction on creation day
+    appData.students[name].balance -= monthly;
+    appData.students[name].history.push({
+      type: 'monthly_deduction', amount: -monthly, date: todayStr,
+      rentalId: rental.id, room: room,
+      description: 'Initial monthly rent for Room '+room+' (rental: '+startDate+' to '+endDate+')'
+    });
+    // Set lastDeductionAnchor to startDate so that catch-up starts from startDate+1m
+    rental.lastDeductionAnchor = startDate;
+  } else {
+    appData.students[name].balance -= special;
+    appData.students[name].history.push({
+      type: 'special_deduction', amount: -special, date: todayStr,
+      rentalId: rental.id, room: room,
+      description: 'Special rent for Room '+room+' ('+startDate+' to '+endDate+')'
+    });
+  }
+  
+  appData.rentals.push(rental);
+  
+  // Catch up on any missed monthly deductions
+  if (wm) {
+    const startD = parseDate(startDate);
+    const endD = parseDate(endDate);
+    const anchorDay = startD.getDate();
+    let lastA = parseDate(rental.lastDeductionAnchor);
+    let next = findNextAnchor(startD, lastA, anchorDay);
+    while (next <= today && next <= endD) {
+      appData.students[name].balance -= monthly;
+      appData.students[name].history.push({
+        type: 'monthly_deduction', amount: -monthly, date: fmtDate(next),
+        rentalId: rental.id, room: room,
+        description: 'Monthly rent for Room '+room+' (due '+fmtDate(next)+')'
+      });
+      rental.lastDeductionAnchor = fmtDate(next);
+      lastA = new Date(next);
+      next = findNextAnchor(startD, lastA, anchorDay);
+    }
+  }
+  
+  saveData();
+  showToast('Rental period added successfully!','success');
+  showMainView();
+}
+
+// ========== DELETE RENTAL ==========
+function showDeleteRental() {
+  const sorted = [...appData.rentals].sort((a,b) => parseDate(b.startDate)-parseDate(a.startDate));
+  if (sorted.length===0) {
+    document.getElementById('content').innerHTML = '<div class="panel"><h2>Delete A Rental Period</h2><p style="color:#888;padding:20px 0;">No rental periods found.</p><button class="action-btn blue" onclick="showMainView()">Back</button></div>';
+    return;
+  }
+  const opts = sorted.map(r=>'<option value="'+r.id+'">'+esc(r.studentName)+' — Room '+r.room+' ('+r.startDate+' to '+r.endDate+')</option>').join('');
+  document.getElementById('content').innerHTML =
+    '<div class="panel"><h2>Delete A Rental Period</h2>' +
+    '<label>Select Rental Period</label><select id="delSelect" onchange="showDelDetail()">'+opts+'</select>' +
+    '<div id="delDetail"></div>' +
+    '<div style="margin-top:15px;"><button class="action-btn red" onclick="confirmDelete()">Confirm Delete</button>' +
+    '<button class="action-btn blue" onclick="showMainView()" style="margin-left:10px;">Cancel</button></div></div>';
+  showDelDetail();
+}
+
+function showDelDetail() {
+  const id = +document.getElementById('delSelect').value;
+  const r = appData.rentals.find(x=>x.id===id);
+  if (!r) return;
+  let totalDed = 0;
+  const st = appData.students[r.studentName];
+  if (st) st.history.forEach(h => { if (h.rentalId===r.id && (h.type==='monthly_deduction'||h.type==='special_deduction')) totalDed += Math.abs(h.amount); });
+  document.getElementById('delDetail').innerHTML =
+    '<div style="background:#f8f9fa;padding:15px;border-radius:6px;margin-top:10px;border-left:4px solid #e74c3c;">' +
+    '<strong>Student:</strong> '+esc(r.studentName)+'<br><strong>Room:</strong> '+r.room+'<br>' +
+    '<strong>Period:</strong> '+r.startDate+' to '+r.endDate+'<br>' +
+    '<strong>Type:</strong> '+(r.isWholeMonth?'Monthly ($'+r.monthlyExpectedMoney+'/month)':'Special ($'+r.specialExpectedMoney+' total)')+'<br>' +
+    '<strong>Total Deducted:</strong> <span style="color:#e74c3c;">$'+totalDed.toFixed(2)+'</span><br>' +
+    '<small style="color:#888;">Deleting will refund $'+totalDed.toFixed(2)+' to the student\'s balance.</small></div>';
+}
+
+function confirmDelete() {
+  const id = +document.getElementById('delSelect').value;
+  const idx = appData.rentals.findIndex(x=>x.id===id);
+  if (idx===-1) { showToast('Rental not found','error'); return; }
+  const r = appData.rentals[idx];
+  const name = r.studentName;
+  
+  if (appData.students[name]) {
+    const related = appData.students[name].history.filter(h=>h.rentalId===r.id&&(h.type==='monthly_deduction'||h.type==='special_deduction'));
+    let total = 0;
+    related.forEach(h=>{ total += Math.abs(h.amount); });
+    appData.students[name].balance += total;
+    if (total>0) {
+      appData.students[name].history.push({
+        type:'rental_deleted_refund', amount:total, date:fmtDate(getToday()),
+        rentalId:r.id, room:r.room,
+        description:'Refund for deleted rental — Room '+r.room+' ('+r.startDate+' to '+r.endDate+')'
+      });
+    }
+    appData.students[name].history = appData.students[name].history.filter(h=>!(h.rentalId===r.id&&(h.type==='monthly_deduction'||h.type==='special_deduction')));
+  }
+  
+  appData.rentals.splice(idx,1);
+  saveData();
+  showToast('Rental deleted. Balance adjusted.','success');
+  showMainView();
+}
+
+// ========== SHOW DATA MENU ==========
+function showDataMenu() {
+  document.getElementById('content').innerHTML =
+    '<div class="panel"><h2>Show The Data</h2>' +
+    '<div class="sub-btn-bar"><button onclick="showRoomData()">Show Room Data</button>' +
+    '<button onclick="showStudentMenu()">Show Student Data</button></div>' +
+    '<button class="action-btn blue" onclick="showMainView()" style="margin-top:10px;">Back</button></div>';
+}
+
+// ========== ROOM DATA VIEW ==========
+let rvOffset = 0;
+
+function showRoomData() { rvOffset = 0; renderRoomView(); }
+
+function renderRoomView() {
+  const now = new Date();
+  const cm = now.getMonth(), cy = now.getFullYear();
+  
+  let months = [];
+  for (let i = 0; i < 12; i++) {
+    let off = i - 5 + rvOffset;
+    let m = cm + off, y = cy;
+    while (m<0){m+=12;y--;} while(m>11){m-=12;y++;}
+    months.push({month:m, year:y});
+  }
+  
+  const mHeaders = months.map(mi => {
+    const cur = mi.month===cm && mi.year===cy;
+    return '<div class="month-cell'+(cur?' current-month':'')+'">'+MONTH_NAMES[mi.month]+' '+mi.year+'</div>';
+  }).join('');
+  
+  const rows = ROOMS.map(room =>
+    '<div class="room-row"><div class="room-label">'+room+'</div>' +
+    '<div class="months-cells" id="mc_'+room+'">'+months.map(()=>'<div class="month-block"></div>').join('')+'</div></div>'
+  ).join('');
+  
+  document.getElementById('content').innerHTML =
+    '<div class="panel"><button class="back-btn" onclick="showDataMenu()">&#8592; Back</button>' +
+    '<h2>Room Data Overview</h2><div class="room-view-container"><div class="room-grid">' +
+    '<div class="room-grid-header"><div class="room-label-header">Room</div>' +
+    '<div class="arrow" onclick="rvOffset-=3;renderRoomView();">&#9664;</div>' +
+    '<div class="months">'+mHeaders+'</div>' +
+    '<div class="arrow" onclick="rvOffset+=3;renderRoomView();">&#9654;</div></div>' +
+    rows + '</div></div></div>';
+  
+  requestAnimationFrame(() => drawBars(months));
+}
+
+function drawBars(months) {
+  const fd = new Date(months[0].year, months[0].month, 1);
+  const ld = new Date(months[11].year, months[11].month+1, 0);
+  const totalDays = (ld-fd)/864e5+1;
+  
+  ROOMS.forEach(room => {
+    const c = document.getElementById('mc_'+room);
+    if (!c) return;
+    appData.rentals.filter(r=>r.room===room).forEach(r => {
+      const rs = parseDate(r.startDate), re = parseDate(r.endDate);
+      if (rs>ld||re<fd) return;
+      const vs = new Date(Math.max(rs,fd)), ve = new Date(Math.min(re,ld));
+      const sd = (vs-fd)/864e5, ed = (ve-fd)/864e5+1;
+      const lp = (sd/totalDays)*100, wp = ((ed-sd)/totalDays)*100;
+      const ci = getColorIdx(r.studentName);
+      const bar = document.createElement('div');
+      bar.className='rental-bar';
+      bar.style.left=lp+'%'; bar.style.width=Math.max(wp,0.5)+'%';
+      bar.style.background=COLORS[ci%COLORS.length];
+      bar.innerHTML='<span class="rental-name">'+esc(r.studentName)+'</span>';
+      bar.title=r.studentName+': '+r.startDate+' to '+r.endDate;
+      c.appendChild(bar);
+    });
+  });
+}
+
+function getColorIdx(name) {
+  const all = [...new Set(appData.rentals.map(r=>r.studentName))].sort();
+  const i = all.indexOf(name);
+  return i>=0?i:0;
+}
+
+// ========== STUDENT DATA ==========
+function showStudentMenu() {
+  document.getElementById('content').innerHTML =
+    '<div class="panel"><button class="back-btn" onclick="showDataMenu()">&#8592; Back</button>' +
+    '<h2>Student Data</h2><div class="sub-btn-bar">' +
+    '<button id="btnAll" class="active" onclick="showStudents(\'all\')">Show All Students</button>' +
+    '<button id="btnPaid" onclick="showStudents(\'paid\')">Show Paid Students</button>' +
+    '<button id="btnUnpaid" onclick="showStudents(\'unpaid\')">Show Unpaid Students</button></div>' +
+    '<div id="stContainer"></div></div>';
+  showStudents('all');
+}
+
+function showStudents(filter) {
+  document.querySelectorAll('.sub-btn-bar button').forEach(b=>b.className='');
+  const map = {all:'btnAll',paid:'btnPaid',unpaid:'btnUnpaid'};
+  const ab = document.getElementById(map[filter]);
+  if (ab) ab.className='active';
+  
+  processAllMonthlyDeductions(); saveData();
+  
+  let sts = Object.entries(appData.students);
+  if (filter==='paid') sts = sts.filter(([,s])=>s.balance>=0);
+  else if (filter==='unpaid') sts = sts.filter(([,s])=>s.balance<0);
+  
+  if (sts.length===0) {
+    document.getElementById('stContainer').innerHTML='<p style="color:#888;margin-top:15px;text-align:center;">No students found.</p>';
+    return;
+  }
+  
+  sts.sort((a,b)=>a[1].balance-b[1].balance);
+  
+  const rows = sts.map(([name,data]) => {
+    const bc = data.balance>0?'balance-positive':(data.balance===0?'balance-zero':'balance-negative');
+    const bs = data.balance>0?'+':'';
+    return '<tr><td>'+esc(name)+'</td><td class="'+bc+'">$'+bs+data.balance.toFixed(2)+'</td>' +
+      '<td><button class="action-btn blue" style="padding:5px 14px;font-size:12px;" onclick="showHistory(\''+escQ(name)+'\')">View History</button></td></tr>';
+  }).join('');
+  
+  document.getElementById('stContainer').innerHTML =
+    '<table class="student-table"><thead><tr><th>Name</th><th>Balance</th><th>Payment History</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+function showHistory(name) {
+  const st = appData.students[name];
+  if (!st) return;
+  const hist = [...st.history].reverse();
+  let items = '';
+  if (hist.length===0) items='<p style="color:#888;">No history records.</p>';
+  else items = hist.map(h => {
+    const ac = h.amount>=0?'balance-positive':'balance-negative';
+    const as = h.amount>=0?'+':'';
+    const icon = h.amount>=0?'&#128229;':'&#128228;';
+    return '<div class="history-item">'+icon+' <strong>'+h.date+'</strong> &mdash; <span class="'+ac+'">$'+as+h.amount.toFixed(2)+'</span><br><small style="color:#666;">'+esc(h.description||h.type)+'</small></div>';
+  }).join('');
+  
+  const bc = st.balance>=0?'balance-positive':'balance-negative';
+  const bs = st.balance>=0?'+':'';
+  showModal('<h3>Payment History: '+esc(name)+'</h3><p style="margin-bottom:12px;font-size:15px;"><strong>Current Balance:</strong> <span class="'+bc+'">$'+bs+st.balance.toFixed(2)+'</span></p><div class="history-list">'+items+'</div><button class="action-btn blue" onclick="hideModal()" style="margin-top:15px;">Close</button>');
+}
+
+// ========== ADD PAYMENT ==========
+function showAddPayment() {
+  processAllMonthlyDeductions(); saveData();
+  const names = Object.keys(appData.students).sort();
+  if (names.length===0) {
+    document.getElementById('content').innerHTML='<div class="panel"><h2>Add A Payment</h2><p style="color:#888;padding:20px 0;">No students found. Add a rental period first.</p><button class="action-btn blue" onclick="showMainView()">Back</button></div>';
+    return;
+  }
+  const opts = names.map(n=>{
+    const b=appData.students[n].balance; const s=b>=0?'+':'';
+    return '<option value="'+esc(n)+'">'+esc(n)+' (Balance: $'+s+b.toFixed(2)+')</option>';
+  }).join('');
+  document.getElementById('content').innerHTML =
+    '<div class="panel"><h2>Add A Payment</h2>' +
+    '<label>Select Student</label><select id="payStudent">'+opts+'</select>' +
+    '<label>Payment Amount <small style="color:#888;">(negative for refund)</small></label>' +
+    '<input type="number" id="payAmount" step="0.01" placeholder="Enter amount">' +
+    '<label>Note <small style="color:#888;">(optional)</small></label>' +
+    '<input type="text" id="payNote" placeholder="Payment note">' +
+    '<div style="margin-top:5px;"><button class="action-btn green" onclick="submitPayment()">Add Payment</button>' +
+    '<button class="action-btn blue" onclick="showMainView()" style="margin-left:10px;">Cancel</button></div></div>';
+}
+
+function submitPayment() {
+  const name = document.getElementById('payStudent').value;
+  const amt = parseFloat(document.getElementById('payAmount').value);
+  const note = document.getElementById('payNote').value.trim();
+  if (!name) { showToast('Please select a student','error'); return; }
+  if (isNaN(amt)||amt===0) { showToast('Please enter a valid non-zero amount','error'); return; }
+  ensureStudent(name);
+  appData.students[name].balance += amt;
+  appData.students[name].history.push({
+    type: amt>=0?'payment':'refund', amount:amt, date:fmtDate(getToday()),
+    description: note||(amt>=0?'Payment received':'Refund issued')
+  });
+  saveData();
+  const s = amt>=0?'+':'';
+  showToast('Payment of $'+s+amt.toFixed(2)+' recorded for '+name,'success');
+  showMainView();
+}
+
+// ========== EXPORT JSON ==========
+function exportJson() {
+  const str = JSON.stringify(appData, null, 2);
+  const blob = new Blob([str],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='room_manager_data_'+fmtDate(getToday())+'.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Data exported successfully','success');
+}
+
+// ========== IMPORT JSON ==========
+function triggerImport() { document.getElementById('importFile').click(); }
+
+function importJson(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      validateImport(data);
+      appData = data;
+      if (!appData.nextRentalId) appData.nextRentalId = appData.rentals.length>0 ? Math.max(...appData.rentals.map(r=>r.id))+1 : 1;
+      saveData();
+      showToast('Data imported successfully!','success');
+      showMainView();
+    } catch(err) {
+      showToast('Import failed: '+err.message,'error');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value='';
+}
+
+function validateImport(d) {
+  if (!d||typeof d!=='object') throw new Error('Invalid JSON structure');
+  if (!d.students||typeof d.students!=='object') throw new Error('Missing "students" object');
+  if (!Array.isArray(d.rentals)) throw new Error('Missing "rentals" array');
+  
+  for (const r of d.rentals) {
+    if (!r.id||typeof r.id!=='number') throw new Error('Rental missing valid "id"');
+    if (!r.studentName||typeof r.studentName!=='string') throw new Error('Rental '+r.id+': missing "studentName"');
+    if (!r.room||!ROOMS.includes(r.room)) throw new Error('Rental '+r.id+': invalid room "'+r.room+'"');
+    if (!r.startDate||!r.endDate) throw new Error('Rental '+r.id+': missing dates');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(r.startDate)||!/^\d{4}-\d{2}-\d{2}$/.test(r.endDate)) throw new Error('Rental '+r.id+': invalid date format');
+    if (parseDate(r.endDate)<=parseDate(r.startDate)) throw new Error('Rental '+r.id+': endDate must be after startDate');
+  }
+  
+  // Room conflicts
+  for (let i=0;i<d.rentals.length;i++) for (let j=i+1;j<d.rentals.length;j++) {
+    const a=d.rentals[i],b=d.rentals[j];
+    if (a.room===b.room && parseDate(a.startDate)<=parseDate(b.endDate) && parseDate(a.endDate)>=parseDate(b.startDate))
+      throw new Error('Room conflict: '+a.room+' (IDs '+a.id+' & '+b.id+')');
+  }
+  
+  // Student conflicts
+  for (let i=0;i<d.rentals.length;i++) for (let j=i+1;j<d.rentals.length;j++) {
+    const a=d.rentals[i],b=d.rentals[j];
+    if (a.studentName===b.studentName && parseDate(a.startDate)<=parseDate(b.endDate) && parseDate(a.endDate)>=parseDate(b.startDate))
+      throw new Error('Student conflict: '+a.studentName+' (IDs '+a.id+' & '+b.id+')');
+  }
+  
+  for (const [name,sData] of Object.entries(d.students)) {
+    if (typeof sData.balance!=='number') throw new Error('Student "'+name+'": invalid balance');
+    if (!Array.isArray(sData.history)) throw new Error('Student "'+name+'": invalid history');
+  }
+}
+
+// ========== AUTO SAVE ==========
+window.addEventListener('beforeunload', saveData);
+
+// ========== INIT ==========
+function init() {
+  loadData();
+  processAllMonthlyDeductions();
+  saveData();
+  showMainView();
+}
+init();
+</script>
+</body>
+</html>
